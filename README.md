@@ -46,8 +46,8 @@ as the venv module; stock Ubuntu and cloud GPU images lack them.
 ```bash
 sudo apt-get update && sudo apt-get install -y python3-venv python3-dev gcc   # Ubuntu/Debian
 git clone https://github.com/shah-jenil/docket-serve.git && cd docket-serve
-./install.sh vllm                 # about 3.5 minutes, 8 GB
-./serve.sh 3b                     # ready in about 4.5 minutes on first start (model download, CUDA graphs)
+./install.sh vllm                 # 3-8 minutes, 8 GB
+./serve.sh 3b                     # first start: 5-7 minutes (model download, CUDA graphs)
 python3 scripts/smoke_test.py     # in a second terminal: PASS
 ```
 

@@ -27,7 +27,7 @@ batching and prefix caching. It is the production path; for a Mac or CPU see
 
 ```bash
 git clone https://github.com/shah-jenil/docket-serve.git && cd docket-serve
-./install.sh vllm      # about 3.5 minutes; installs vLLM 0.31.0 into ./.venv
+./install.sh vllm      # 3-8 minutes, mostly downloads; installs vLLM 0.31.0 into ./.venv
 ./serve.sh 3b          # http://127.0.0.1:8080
 python3 scripts/smoke_test.py      # in a second terminal: prints PASS
 ```
@@ -45,10 +45,10 @@ bars for loading, compiling and capturing CUDA graphs. Measured on an RTX 3060 (
 
 | Step | First start | Later starts |
 |---|---|---|
-| Download the model (7.3 GB, into the Hugging Face cache) | about 1 minute | cached |
+| Download the model (7.3 GB, into the Hugging Face cache) | 1-2 minutes | cached |
 | torch.compile | 21 s | cached, under 1 s |
 | CUDA graph capture (runs twice: once to measure memory, then for serving) | 2 x 100 s | 2 x 100 s |
-| **Ready** | **about 4.5 minutes** | **about 4 minutes** |
+| **Ready** | **4.5-6.5 minutes** | **about 4 minutes** |
 
 Graph capture time scales with `--cudagraph-max-tokens` (default 2048: whole prefills up to
 2,048 tokens run as CUDA graphs, the lowest latency on prompts of that size). On a small GPU,
@@ -56,7 +56,7 @@ Graph capture time scales with `--cudagraph-max-tokens` (default 2048: whole pre
 same 77 ms p50 on the smoke test's 355-token request; prompts longer than 512 tokens then run
 without graphs and pay more fixed overhead. Faster GPUs capture graphs faster.
 
-On the RTX 3060, the smoke test (3 questions per request) gave p50 78 ms, with a KV cache of
+On the RTX 3060, the smoke test (3 questions per request) gave p50 48-78 ms, with a KV cache of
 about 23,000 tokens at the default `--gpu-memory-utilization 0.9`.
 
 ## Stopping
