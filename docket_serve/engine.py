@@ -216,8 +216,12 @@ class GGUFBackend:
     def __init__(self, model: str, *, tokenizer: str | None = None,
                  max_model_len: int = 8192, n_gpu_layers: int = -1,
                  n_threads: int | None = None):
+        import os
+
         import numpy as np
         from llama_cpp import Llama
+        # GGUF installs omit PyTorch on purpose; only the tokenizer is used from transformers.
+        os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
         from transformers import AutoTokenizer
 
         path = resolve_gguf(model)

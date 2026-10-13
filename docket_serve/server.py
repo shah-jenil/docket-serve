@@ -1,6 +1,9 @@
 """TypeSafe System One compatible HTTP server.
 
-    docket-serve --model <path-or-hf-id> [--backend vllm|hf|gguf] [--port 8000]
+    docket-serve [--model <path-or-hf-id>] [--backend vllm|hf|gguf] [--port 8080]
+
+With no --model, a GGUF install serves Docket-3B-GGUF and a vLLM/hf install serves Docket-3B,
+both downloaded from Hugging Face on first start.
 
 Endpoints
 ---------
@@ -17,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import importlib.util
 import os
 import time
 
@@ -94,15 +98,37 @@ def build_app(service: Service) -> FastAPI:
     return app
 
 
+HF_ORG = os.environ.get("DOCKET_HF_ORG", "shahjenil")
+
+
+def _installed(module: str) -> bool:
+    return importlib.util.find_spec(module) is not None
+
+
+def resolve_model_and_backend(model: str | None, backend: str | None) -> tuple[str, str]:
+    """Fill in whichever of model and backend is missing. A model id or path containing "gguf"
+    means the gguf backend; otherwise vLLM when installed, else llama.cpp, else transformers."""
+    if not backend:
+        if model:
+            backend = "gguf" if "gguf" in model.lower() else ("vllm" if _installed("vllm") else "hf")
+        else:
+            backend = "vllm" if _installed("vllm") else ("gguf" if _installed("llama_cpp") else "hf")
+    if not model:
+        model = f"{HF_ORG}/Docket-3B-GGUF" if backend == "gguf" else f"{HF_ORG}/Docket-3B"
+    return model, backend
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default=os.environ.get("DOCKET_MODEL", "/models/docket"))
+    ap.add_argument("--model", default=os.environ.get("DOCKET_MODEL"),
+                    help="Hugging Face repo id, local folder or .gguf file (default: the released Docket-3B for this install)")
     ap.add_argument("--name", default=os.environ.get("DOCKET_NAME"), help="model name in responses (default: from docket_calibration.json)")
-    ap.add_argument("--backend", choices=["vllm", "hf", "gguf"], default=os.environ.get("DOCKET_BACKEND", "vllm"))
+    ap.add_argument("--backend", choices=["vllm", "hf", "gguf"], default=os.environ.get("DOCKET_BACKEND") or None,
+                    help="default: gguf for GGUF models, else vllm if installed, else hf")
     ap.add_argument("--tokenizer", help="GGUF tokenizer directory (default: beside the .gguf file)")
     ap.add_argument("--n-gpu-layers", type=int, default=-1, help="GGUF GPU layers: -1 all available, 0 CPU only")
     ap.add_argument("--n-threads", type=int, default=None, help="GGUF CPU thread count")
-    ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"), help="0.0.0.0 to accept connections from other machines")
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)))
     ap.add_argument("--max-model-len", type=int, default=8192,
                     help="token limit per prompt; longer requests get HTTP 422 (the base model supports up to 131072; "
@@ -115,6 +141,8 @@ def main(argv=None):
     ap.add_argument("--no-calibration", action="store_true")
     import sys
     a = ap.parse_args(argv if argv is not None else sys.argv[1:])
+    a.model, a.backend = resolve_model_and_backend(a.model, a.backend)
+    print(f"docket-serve: {a.backend} backend, model {a.model}", file=sys.stderr)
     if a.backend == "vllm":
         backend = VLLMBackend(a.model, max_model_len=a.max_model_len, gpu_memory_utilization=a.gpu_memory_utilization,
                               max_num_seqs=a.max_num_seqs, quantization=a.quantization, cudagraph_max_tokens=a.cudagraph_max_tokens)
@@ -131,6 +159,7 @@ def main(argv=None):
     if not a.name:
         a.name = model_name(metadata_dir)
     import uvicorn
+    print(f"docket-serve: serving on http://{a.host}:{a.port} (check it with: python3 scripts/smoke_test.py)", file=sys.stderr)
     uvicorn.run(build_app(Service(backend, a.name, temps)), host=a.host, port=a.port, log_level="warning")
 
 

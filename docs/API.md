@@ -67,7 +67,7 @@ The response header `x-docket-latency-ms` gives the server-side time per request
 ## Server options
 
 ```
-docket-serve --model PATH_OR_HF_ID [--backend vllm|hf|gguf] [--port 8080] [--quantization fp8]
+docket-serve [--model PATH_OR_HF_ID] [--backend vllm|hf|gguf] [--host 127.0.0.1] [--port 8080] [--quantization fp8]
              [--max-model-len 8192] [--max-num-seqs 256] [--gpu-memory-utilization 0.9]
              [--cudagraph-max-tokens 2048] [--name docket-3b] [--no-calibration]
 ```
@@ -75,8 +75,16 @@ docket-serve --model PATH_OR_HF_ID [--backend vllm|hf|gguf] [--port 8080] [--qua
 `--model` takes a local folder or a Hugging Face repo id; `docket_calibration.json` is read
 from the same place. With `--backend gguf` it also accepts a `.gguf` file path, and a repo id such as
 `shahjenil/Docket-3B-GGUF` downloads the GGUF together with its tokenizer and calibration.
+Without `--model`, the server uses `shahjenil/Docket-3B-GGUF` for the gguf backend and
+`shahjenil/Docket-3B` otherwise. Without `--backend`, a model whose id or path contains `gguf`
+uses the gguf backend; otherwise vllm when installed, else hf. With neither option, a GGUF
+install (`pip install -r requirements.txt`) serves Docket-3B-GGUF.
 
-Environment equivalents: `DOCKET_MODEL`, `DOCKET_NAME`, `DOCKET_BACKEND`, `DOCKET_QUANTIZATION`, `DOCKET_CUDAGRAPH_MAX_TOKENS`, `PORT`.
+`--host` defaults to `127.0.0.1` (this machine only); use `--host 0.0.0.0` to accept
+connections from other machines. The Docker image sets `HOST=0.0.0.0`.
+
+Environment equivalents: `DOCKET_MODEL`, `DOCKET_NAME`, `DOCKET_BACKEND`, `DOCKET_QUANTIZATION`, `DOCKET_CUDAGRAPH_MAX_TOKENS`, `HOST`, `PORT`;
+`DOCKET_HF_ORG` changes the Hugging Face namespace of the default models.
 
 **Latency.** For the lowest latency use an H100-class GPU with `--quantization fp8`, and keep
 1-2 requests in flight per replica. Measured p50 at ~1,000 tokens: Docket-3B 17.8 ms. `--cudagraph-max-tokens` (default 2048) runs whole prefills up to that
