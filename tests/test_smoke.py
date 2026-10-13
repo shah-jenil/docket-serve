@@ -63,3 +63,32 @@ def test_smoke_fails_without_calibration():
     finally:
         server.should_exit = True
     assert result.returncode != 0 and "not calibrated" in result.stderr
+
+
+def test_server_shutdown_closes_the_backend():
+    """SIGTERM skips finalizers, so the app must stop the backend (vLLM's engine process) itself."""
+    from fastapi.testclient import TestClient
+
+    closed = []
+    backend = FakeBackend()
+    backend.close = lambda: closed.append(True)
+    with TestClient(build_app(Service(backend, "docket-test", {}))) as client:
+        assert client.get("/healthz").json()["ok"]
+        assert not closed
+    assert closed == [True]
+
+
+def test_missing_vllm_build_tools(monkeypatch, tmp_path):
+    import shutil
+    import sysconfig
+
+    from docket_serve.engine import missing_vllm_build_tools
+
+    monkeypatch.setattr(sysconfig, "get_paths", lambda: {"include": str(tmp_path)})
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    monkeypatch.delenv("CC", raising=False)
+    v = f"{sys.version_info[0]}.{sys.version_info[1]}"
+    assert missing_vllm_build_tools() == [f"python{v}-dev", "gcc"]
+    (tmp_path / "Python.h").touch()
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/gcc" if name == "gcc" else None)
+    assert missing_vllm_build_tools() == []

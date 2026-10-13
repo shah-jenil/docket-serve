@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import importlib.util
 import os
 import time
@@ -67,7 +68,16 @@ class Service:
 
 
 def build_app(service: Service) -> FastAPI:
-    app = FastAPI(title="docket-serve", version=__version__)
+    @contextlib.asynccontextmanager
+    async def lifespan(app):
+        yield
+        # On SIGTERM (kill, docker stop, systemd) uvicorn exits through the default handler, which
+        # skips finalizers; without this, vLLM's engine process outlives the server and keeps the GPU.
+        close = getattr(service.backend, "close", None)
+        if close:
+            close()
+
+    app = FastAPI(title="docket-serve", version=__version__, lifespan=lifespan)
 
     async def handle(request: Request):
         try:
@@ -144,6 +154,8 @@ def main(argv=None):
     a.model, a.backend = resolve_model_and_backend(a.model, a.backend)
     print(f"docket-serve: {a.backend} backend, model {a.model}", file=sys.stderr)
     if a.backend == "vllm":
+        print("docket-serve: starting vLLM. The first start downloads the model; every start compiles and "
+              "captures CUDA graphs, which takes 1-4 minutes on a small GPU (see docs/VLLM.md).", file=sys.stderr)
         backend = VLLMBackend(a.model, max_model_len=a.max_model_len, gpu_memory_utilization=a.gpu_memory_utilization,
                               max_num_seqs=a.max_num_seqs, quantization=a.quantization, cudagraph_max_tokens=a.cudagraph_max_tokens)
     else:

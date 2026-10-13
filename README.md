@@ -39,12 +39,21 @@ Apple Silicon Macs use the GPU (Metal) automatically. Intel Macs have no prebuil
 wheel, so pip compiles it there, which needs the Xcode command line tools. See
 [docs/GGUF.md](docs/GGUF.md) for NVIDIA acceleration, CPU threads and memory.
 
-**Linux with an NVIDIA GPU, production serving: Docket-3B via vLLM**
+**Linux with an NVIDIA GPU (12 GB+), production serving: Docket-3B via vLLM.**
+vLLM compiles kernels when it starts, so it needs a C compiler and the Python headers as well
+as the venv module; stock Ubuntu and cloud GPU images lack them.
 
 ```bash
-./install.sh vllm
-./serve.sh 3b
+sudo apt-get update && sudo apt-get install -y python3-venv python3-dev gcc   # Ubuntu/Debian
+git clone https://github.com/shah-jenil/docket-serve.git && cd docket-serve
+./install.sh vllm                 # 3-8 minutes, 8 GB
+./serve.sh 3b                     # first start: 5-7 minutes (model download, CUDA graphs)
+python3 scripts/smoke_test.py     # in a second terminal: PASS
 ```
+
+Later starts skip the download but still capture CUDA graphs (about 4 minutes on an RTX 3060,
+less on bigger GPUs; `--cudagraph-max-tokens 512` halves it). See [docs/VLLM.md](docs/VLLM.md)
+for timings, stopping the server and troubleshooting.
 
 `./install.sh hf` installs plain Transformers instead of vLLM (CPU or GPU, slow; for testing).
 

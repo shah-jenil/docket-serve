@@ -133,10 +133,31 @@ def probs_from_logprobs(logps: list[float], temperature: float = 1.0) -> list[fl
     return [v / s for v in e]
 
 
+def missing_vllm_build_tools() -> list[str]:
+    """System packages vLLM needs at startup that pip cannot install: torch.compile and Triton
+    build small C extensions, which needs a C compiler and the Python headers."""
+    import os
+    import shutil
+    import sys
+    import sysconfig
+
+    v = f"{sys.version_info[0]}.{sys.version_info[1]}"
+    missing = []
+    if not Path(sysconfig.get_paths()["include"], "Python.h").exists():
+        missing.append(f"python{v}-dev")
+    if not any(shutil.which(c) for c in (os.environ.get("CC"), "cc", "gcc", "clang") if c):
+        missing.append("gcc")
+    return missing
+
+
 class VLLMBackend:
     def __init__(self, model: str, *, max_model_len: int = 8192, gpu_memory_utilization: float = 0.90,
                  max_num_seqs: int = 256, enable_prefix_caching: bool = True, dtype: str = "bfloat16", quantization: str | None = None,
                  cudagraph_max_tokens: int = 2048):
+        missing = missing_vllm_build_tools()
+        if missing:
+            raise SystemExit(f"The vllm backend compiles kernels at startup and needs: {' '.join(missing)}.\n"
+                             f"On Ubuntu/Debian: sudo apt-get install -y {' '.join(missing)}")
         from vllm import AsyncEngineArgs, AsyncLLMEngine
 
         args = AsyncEngineArgs(model=model, dtype=dtype, max_model_len=max_model_len, gpu_memory_utilization=gpu_memory_utilization,
@@ -149,6 +170,10 @@ class VLLMBackend:
         self.engine = AsyncLLMEngine.from_engine_args(args)
         from transformers import AutoTokenizer
         self.readout = Readout(AutoTokenizer.from_pretrained(model), max_prompt_tokens=max_model_len - 1)
+
+    def close(self) -> None:
+        """Stop the engine's worker process, releasing GPU memory."""
+        self.engine.shutdown()
 
     async def score(self, prep: Prepared) -> list[float]:
         from vllm import SamplingParams
