@@ -11,11 +11,14 @@ license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
 keywords = ["llm", "decisions", "classification", "system-one", "vllm", "granite"]
 classifiers = ["License :: OSI Approved :: Apache Software License", "Programming Language :: Python :: 3"]
-dependencies = ["fastapi>=0.110", "uvicorn>=0.29", "pydantic>=2.6", "transformers>=5.0", "torch>=2.4", "huggingface_hub>=0.23"]
+# torch is only needed by the vllm and hf backends; the GGUF backend uses transformers for its tokenizer alone.
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29", "pydantic>=2.6", "transformers>=5.0", "jinja2>=3.1", "huggingface_hub>=0.23"]
 
 [project.optional-dependencies]
-vllm = ["vllm>=0.30.0"]
-gguf = ["llama-cpp-python>=0.3.36", "numpy>=1.26", "sentencepiece>=0.2"]
+vllm = ["vllm>=0.30.0", "torch>=2.4"]
+hf = ["torch>=2.4"]
+# Prebuilt llama-cpp-python wheels come from its own index; requirements.txt adds it (see docs/GGUF.md).
+gguf = ["llama-cpp-python>=0.3.36", "numpy>=1.26"]
 
 [project.scripts]
 docket-serve = "docket_serve.server:main"

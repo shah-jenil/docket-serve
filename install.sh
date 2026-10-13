@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Set up docket-serve in ./.venv for one backend:
-#   ./install.sh gguf   # Mac (Metal), CPU or a small GPU, via llama.cpp: serves Docket-3B-GGUF
+#   ./install.sh gguf   # any Mac, Linux or Windows (WSL) machine, CPU or Apple GPU: serves Docket-3B-GGUF
 #   ./install.sh vllm   # Linux + NVIDIA GPU, production serving: Docket-3B
 #   ./install.sh hf     # plain Transformers on CPU or GPU, slow, for testing: Docket-3B
 # Uses python3 (3.10+), or the interpreter in $PYTHON. Rerun to reinstall.
@@ -13,22 +13,16 @@ case "$BACKEND" in
 esac
 PY=${PYTHON:-python3}
 "$PY" -c 'import sys; sys.exit(sys.version_info < (3, 10))' || { echo "Python 3.10 or newer is required ($PY)."; exit 1; }
-if [ "$(uname -s)" = Darwin ]; then
-  if [ "$BACKEND" = vllm ]; then
-    echo "vLLM needs Linux with an NVIDIA GPU. On a Mac use: ./install.sh gguf"; exit 1
-  fi
-  if [ "$("$PY" -c 'import platform; print(platform.machine())')" != arm64 ]; then
-    echo "warning: $PY is not a native arm64 Python; Metal acceleration needs one." >&2
-  fi
-  if [ "$BACKEND" = gguf ]; then export CMAKE_ARGS="${CMAKE_ARGS:--DGGML_METAL=on}"; fi
+if [ "$BACKEND" = vllm ] && [ "$(uname -s)" = Darwin ]; then
+  echo "vLLM needs Linux with an NVIDIA GPU. On a Mac use: ./install.sh gguf"; exit 1
 fi
 "$PY" -m venv .venv
 .venv/bin/pip install --quiet --upgrade pip
-if [ "$BACKEND" = hf ]; then
-  .venv/bin/pip install .
+if [ "$BACKEND" = gguf ]; then
+  # Prebuilt llama.cpp wheels (Metal on Apple Silicon); no compiler or PyTorch needed.
+  .venv/bin/pip install -r requirements.txt
 else
-  # --no-cache-dir: never reuse a llama.cpp build compiled without Metal/CUDA.
-  .venv/bin/pip install --no-cache-dir ".[$BACKEND]"
+  .venv/bin/pip install -e ".[$BACKEND]"
 fi
 echo "$BACKEND" > .venv/docket-backend
 echo "Installed the $BACKEND backend. Next: ./serve.sh $([ "$BACKEND" = gguf ] && echo 3b-gguf || echo 3b)"

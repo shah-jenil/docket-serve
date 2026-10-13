@@ -1,0 +1,11 @@
+# Docket GGUF: one install for macOS, Linux and Windows, CPU or Apple GPU (Metal). No compiler,
+# Xcode or PyTorch needed. From the repository folder:
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt        (Windows: .venv\Scripts\pip install -r requirements.txt)
+#   .venv/bin/docket-serve                           (Windows: .venv\Scripts\docket-serve)
+# llama-cpp-python publishes prebuilt wheels on its own index, not PyPI. Its "cpu" wheels include
+# Metal on Apple Silicon. Where no wheel exists (e.g. Intel Macs), pip builds from source instead.
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+--prefer-binary
+llama-cpp-python==0.3.36
+-e .[gguf]

@@ -42,11 +42,13 @@ def server_rss_mb(port):
         out = subprocess.run(["ps", "-ax", "-o", "rss=,command="], capture_output=True, text=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError):
         return None
+    found = []
     for line in out.splitlines():
         rss, _, command = line.strip().partition(" ")
-        if "docket-serve" in command and f"--port {port}" in command:
-            return int(rss) / 1024
-    return None
+        listens = f"--port {port}" in command or ("--port" not in command and port == 8080)
+        if ("bin/docket-serve" in command or "docket_serve" in command) and listens:
+            found.append(int(rss) / 1024)
+    return max(found, default=None)   # the server, not a shell that launched it
 
 
 def main():

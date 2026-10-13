@@ -76,3 +76,17 @@ def test_calibration_from_hub_repo_id(tmp_path, monkeypatch):
     local = tmp_path / "local-model"
     local.mkdir()
     assert load_calibration(str(local)) == {}   # an existing local folder never falls back to the Hub
+
+
+def test_default_model_and_backend(monkeypatch):
+    from docket_serve import server
+    installed = set()
+    monkeypatch.setattr(server, "_installed", lambda module: module in installed)
+    installed.add("llama_cpp")   # a requirements.txt install
+    assert server.resolve_model_and_backend(None, None) == ("shahjenil/Docket-3B-GGUF", "gguf")
+    assert server.resolve_model_and_backend("/models/Docket-3B-Q8_0.gguf", None) == ("/models/Docket-3B-Q8_0.gguf", "gguf")
+    assert server.resolve_model_and_backend("org/Docket-3B", None) == ("org/Docket-3B", "hf")
+    installed.add("vllm")
+    assert server.resolve_model_and_backend(None, None) == ("shahjenil/Docket-3B", "vllm")
+    assert server.resolve_model_and_backend("/models/docket", None) == ("/models/docket", "vllm")
+    assert server.resolve_model_and_backend(None, "gguf") == ("shahjenil/Docket-3B-GGUF", "gguf")

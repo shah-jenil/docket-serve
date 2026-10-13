@@ -17,18 +17,29 @@ It scores allowed answers in one forward pass per question, without generating a
 Models are on Hugging Face; this repository is the server. Clone it, install one backend, and
 start a model. The first start downloads the model into the Hugging Face cache.
 
-```bash
-git clone https://github.com/shah-jenil/docket-serve.git docket && cd docket
-```
-
-**Mac (Apple Silicon), CPU or a small GPU: Docket-3B GGUF via llama.cpp**
+**Any computer (Mac, Linux or Windows; CPU or Apple GPU): Docket-3B-GGUF via llama.cpp.**
+Needs Python 3.10+ and about 5 GB of free memory. No compiler, Xcode, CUDA or PyTorch.
 
 ```bash
-./install.sh gguf        # needs Python 3.10+; on a Mac, Xcode command line tools
-./serve.sh 3b-gguf       # http://127.0.0.1:8080
+git clone https://github.com/shah-jenil/docket-serve.git && cd docket-serve
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt     # about 350 MB, prebuilt
+.venv/bin/docket-serve                        # downloads the 3.9 GB model once, then serves http://127.0.0.1:8080
 ```
 
-**Linux with an NVIDIA GPU: Docket-3B via vLLM**
+On Windows use `py -m venv .venv`, `.venv\Scripts\pip install -r requirements.txt` and
+`.venv\Scripts\docket-serve`. In a second terminal, check the server end to end (calibration,
+answers, latency):
+
+```bash
+python3 scripts/smoke_test.py
+```
+
+Apple Silicon Macs use the GPU (Metal) automatically. Intel Macs have no prebuilt llama.cpp
+wheel, so pip compiles it there, which needs the Xcode command line tools. See
+[docs/GGUF.md](docs/GGUF.md) for NVIDIA acceleration, CPU threads and memory.
+
+**Linux with an NVIDIA GPU, production serving: Docket-3B via vLLM**
 
 ```bash
 ./install.sh vllm
@@ -36,21 +47,15 @@ git clone https://github.com/shah-jenil/docket-serve.git docket && cd docket
 ```
 
 `./install.sh hf` installs plain Transformers instead of vLLM (CPU or GPU, slow; for testing).
-Check a running server end to end, including calibration and latency:
 
-```bash
-python3 scripts/smoke_test.py
-```
+| Release | Format | Install | Serve |
+|---|---|---|---|
+| [Docket-3B-GGUF](https://huggingface.co/shahjenil/Docket-3B-GGUF) | GGUF Q8_0 | `pip install -r requirements.txt` | `docket-serve` |
+| [Docket-3B](https://huggingface.co/shahjenil/Docket-3B) | BF16 | `./install.sh vllm` | `./serve.sh 3b` |
 
-| Release | Format | Command |
-|---|---|---|
-| [Docket-3B](https://huggingface.co/shahjenil/Docket-3B) | BF16 | `./serve.sh 3b` |
-| [Docket-3B-GGUF](https://huggingface.co/shahjenil/Docket-3B-GGUF) | GGUF Q8_0 | `./serve.sh 3b-gguf` |
-
-`serve.sh` passes extra options to `docket-serve`, e.g. `./serve.sh 3b-gguf --max-model-len 4096`
-(less memory). `HOST` and `PORT` change the address. Without the scripts, the same server runs as
-`.venv/bin/docket-serve --model <path-or-repo-id> [--backend vllm|hf|gguf]`
-([options](docs/API.md#server-options), [GGUF details](docs/GGUF.md)).
+`docket-serve` takes options such as `--max-model-len 4096` (less memory), `--host` and `--port`,
+and `--model <path-or-repo-id>` for a local copy ([options](docs/API.md#server-options)).
+`./install.sh gguf` and `./serve.sh 3b-gguf` remain as shortcuts for the GGUF steps above.
 **Docker** (vLLM, GPU): `docker build -t docket-serve . && docker run --gpus all -p 8080:8080 -v /path/to/Docket-3B:/models/docket docket-serve`.
 
 ## Results
