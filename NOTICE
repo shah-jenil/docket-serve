@@ -1,0 +1,25 @@
+Docket (the Docket-3B model and the docket-serve server)
+Copyright 2026 the Docket authors. Licensed under the Apache License, Version 2.0.
+
+MODEL WEIGHTS
+Docket-3B is a derivative work of IBM Granite 4.2 (ibm-granite/granite-4.2-3b), licensed under
+the Apache License 2.0. Modifications: fine-tuned
+for typed decisions (LoRA, merged into the base weights); calibration temperatures added
+(docket_calibration.json). IBM and Granite are trademarks of IBM; Docket is not affiliated with
+or endorsed by IBM.
+
+Training used public datasets including WANLI (CC BY 4.0) and banking77 by PolyAI (CC BY 4.0),
+credited here as their licences require, GSM8K by OpenAI (MIT) and AQuA-RAT by DeepMind
+(Apache-2.0).
+
+SOFTWARE
+docket_serve/render.py and docket_serve/wire.py are adapted from jevify
+(https://github.com/uspraveen/Jevify, commit a1308666), Copyright 2026 Praveen Raj U S and
+Jevify contributors, licensed under the Apache License 2.0. Modifications are described at the
+top of each file.
+
+COMPATIBILITY
+docket-serve implements a request and response format compatible with the TypeSafe System One
+API for interoperability. TypeSafe and Jev are names of TypeSafe AI; Docket is not affiliated
+with or endorsed by TypeSafe AI. No outputs of TypeSafe or OpenAI models were used as training
+data.

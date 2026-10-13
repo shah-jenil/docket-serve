@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docket-serve"
+version = "0.1.0"
+description = "Typed-decision server for the Docket models (choice, yes/no, score), compatible with the TypeSafe System One API"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+keywords = ["llm", "decisions", "classification", "system-one", "vllm", "granite"]
+classifiers = ["License :: OSI Approved :: Apache Software License", "Programming Language :: Python :: 3"]
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29", "pydantic>=2.6", "transformers>=5.0", "torch>=2.4", "huggingface_hub>=0.23"]
+
+[project.optional-dependencies]
+vllm = ["vllm>=0.30.0"]
+gguf = ["llama-cpp-python>=0.3.36", "numpy>=1.26", "sentencepiece>=0.2"]
+
+[project.scripts]
+docket-serve = "docket_serve.server:main"
+
+[tool.setuptools]
+packages = ["docket_serve"]
