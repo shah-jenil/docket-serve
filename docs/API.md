@@ -88,7 +88,9 @@ Environment equivalents: `DOCKET_MODEL`, `DOCKET_NAME`, `DOCKET_BACKEND`, `DOCKE
 
 **Latency.** For the lowest latency use an H100-class GPU with `--quantization fp8`, and keep
 1-2 requests in flight per replica. Measured p50 at ~1,000 tokens: Docket-3B 17.8 ms. `--cudagraph-max-tokens` (default 2048) runs whole prefills up to that
-length as CUDA graphs, which cuts fixed overhead on short prompts.
+length as CUDA graphs, which cuts fixed overhead on short prompts. Capturing them takes most
+of the startup time on small GPUs (about 200 s at 2048 on an RTX 3060, 100 s total startup at
+512); see [VLLM.md](VLLM.md).
 
 **Throughput.** For about 1,000-token decisions, 4-8 requests in flight per GPU reach peak
 throughput; more only adds latency. See the model cards for measured numbers.

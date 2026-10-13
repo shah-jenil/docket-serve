@@ -1,5 +1,5 @@
 # GPU image (vLLM backend). Mount the model at /models/docket, or pass --model <hf-id> to download it.
-FROM vllm/vllm-openai:v0.30.0
+FROM vllm/vllm-openai:v0.31.0
 WORKDIR /app
 COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY docket_serve ./docket_serve
