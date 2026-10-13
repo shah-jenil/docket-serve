@@ -7,21 +7,10 @@ Docket is a Jev-style decision model built on IBM Granite. Give it context, inst
 and valid answers to classify text, route work, score relevance, or choose an agent action.
 It scores allowed answers in one forward pass per question, without generating an explanation.
 
-| Model | Base | Enterprise accuracy | Reasoning accuracy | JevBench /231 |
-|---|---|---|---|---|
-| [Docket-3B](https://huggingface.co/shahjenil/Docket-3B) | IBM Granite 4.2 3B | 90.1% | 78.2% | 177 |
-
-Enterprise: 3,063 questions, equally weighted across ten workflows. Reasoning:
-743 questions, equally weighted across five tasks. Results use bf16 and development-fitted
-calibration. Docket-3B serves an 8,192-token context; that limit does not establish long-input
-accuracy. See the model card and [full benchmarks](https://jenil.net/docket/results/) for conditions.
-FP8 quality and serving performance have not been remeasured; existing GPU studies are
-reference measurements.
-
-[Docket-3B-GGUF](https://huggingface.co/shahjenil/Docket-3B-GGUF) (Q8_0) runs the 3B on a Mac, a CPU or a small
-GPU through llama.cpp. On the 1,326-question core comparison, workflow-weighted accuracy was
-85.26% versus 85.28% for BF16, with 98.87% prediction agreement; the GGUF card has the
-per-slice results.
+**Models:** [Docket-3B](https://huggingface.co/shahjenil/Docket-3B) (BF16, NVIDIA GPU) ·
+[Docket-3B-GGUF](https://huggingface.co/shahjenil/Docket-3B-GGUF) (Q8_0, Mac or CPU) on Hugging Face ·
+**Server:** [shah-jenil/docket-serve](https://github.com/shah-jenil/docket-serve) ·
+**Docs:** [jenil.net/docket](https://jenil.net/docket/)
 
 ## Quick start
 
@@ -64,7 +53,27 @@ python3 scripts/smoke_test.py
 ([options](docs/API.md#server-options), [GGUF details](docs/GGUF.md)).
 **Docker** (vLLM, GPU): `docker build -t docket-serve . && docker run --gpus all -p 8080:8080 -v /path/to/Docket-3B:/models/docket docket-serve`.
 
-**API.** `docket-serve` speaks the TypeSafe System One wire format, so existing System One
+## Results
+
+| Model | Base | Enterprise accuracy | Reasoning accuracy | JevBench /231 |
+|---|---|---|---|---|
+| [Docket-3B](https://huggingface.co/shahjenil/Docket-3B) | IBM Granite 4.2 3B | 90.1% | 78.2% | 177 |
+
+Enterprise: 3,063 questions, equally weighted across ten workflows. Reasoning:
+743 questions, equally weighted across five tasks. Results use bf16 and development-fitted
+calibration. Docket-3B serves an 8,192-token context; that limit does not establish long-input
+accuracy. See the model card and [full benchmarks](https://jenil.net/docket/results/) for conditions.
+FP8 quality and serving performance have not been remeasured; existing GPU studies are
+reference measurements.
+
+[Docket-3B-GGUF](https://huggingface.co/shahjenil/Docket-3B-GGUF) (Q8_0) runs the 3B on a Mac, a CPU or a small
+GPU through llama.cpp. On the 1,326-question core comparison, workflow-weighted accuracy was
+85.26% versus 85.28% for BF16, with 98.87% prediction agreement; the GGUF card has the
+per-slice results.
+
+## API
+
+`docket-serve` speaks the TypeSafe System One wire format, so existing System One
 clients work by changing the base URL:
 
 | Endpoint | Purpose |
